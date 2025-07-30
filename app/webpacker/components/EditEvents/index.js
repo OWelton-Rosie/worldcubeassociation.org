@@ -1,4 +1,8 @@
-import React, { useCallback, useMemo } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+} from 'react';
 import _ from 'lodash';
 
 import { Button, Card, Message } from 'semantic-ui-react';
@@ -10,7 +14,6 @@ import { changesSaved } from './store/actions';
 import wcifEventsReducer from './store/reducer';
 import Store, { useDispatch, useStore } from '../../lib/providers/StoreProvider';
 import ConfirmProvider from '../../lib/providers/ConfirmProvider';
-import useUnsavedChangesAlert from '../../lib/hooks/useUnsavedChangesAlert';
 
 function EditEvents() {
   const {
@@ -22,7 +25,24 @@ function EditEvents() {
     !_.isEqual(wcifEvents, initialWcifEvents)
   ), [wcifEvents, initialWcifEvents]);
 
-  useUnsavedChangesAlert(unsavedChanges);
+  const onUnload = useCallback((e) => {
+    // Prompt the user before letting them navigate away from this page with unsaved changes.
+    if (unsavedChanges) {
+      const confirmationMessage = 'You have unsaved changes, are you sure you want to leave?';
+      e.returnValue = confirmationMessage;
+      return confirmationMessage;
+    }
+
+    return null;
+  }, [unsavedChanges]);
+
+  useEffect(() => {
+    window.addEventListener('beforeunload', onUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', onUnload);
+    };
+  }, [onUnload]);
 
   const { saveWcif, saving } = useSaveWcifAction();
 

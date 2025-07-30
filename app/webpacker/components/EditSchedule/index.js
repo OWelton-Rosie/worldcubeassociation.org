@@ -1,4 +1,9 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 import {
   Accordion,
@@ -17,7 +22,6 @@ import ConfirmProvider from '../../lib/providers/ConfirmProvider';
 import EditVenues from './EditVenues';
 import EditActivities from './EditActivities';
 import WCAQueryClientProvider from '../../lib/providers/WCAQueryClientProvider';
-import useUnsavedChangesAlert from '../../lib/hooks/useUnsavedChangesAlert';
 
 function EditSchedule({
   wcifEvents,
@@ -39,7 +43,24 @@ function EditSchedule({
     !_.isEqual(wcifSchedule, initialWcifSchedule)
   ), [wcifSchedule, initialWcifSchedule]);
 
-  useUnsavedChangesAlert(unsavedChanges);
+  const onUnload = useCallback((e) => {
+    // Prompt the user before letting them navigate away from this page with unsaved changes.
+    if (unsavedChanges) {
+      const confirmationMessage = 'You have unsaved changes, are you sure you want to leave?';
+      e.returnValue = confirmationMessage;
+      return confirmationMessage;
+    }
+
+    return null;
+  }, [unsavedChanges]);
+
+  useEffect(() => {
+    window.addEventListener('beforeunload', onUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', onUnload);
+    };
+  }, [onUnload]);
 
   const { saveWcif, saving } = useSaveWcifAction();
 
